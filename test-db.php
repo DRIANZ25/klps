@@ -1,41 +1,42 @@
 <?php
 require_once __DIR__ . '/config/config.php';
 
-echo "<h1>Database Test</h1>";
-echo "Environment: " . ENVIRONMENT . "<br>";
+echo "<h1>Database Debug</h1>";
+echo "Environment: " . (getenv('RAILWAY_ENVIRONMENT') ? 'Railway' : 'Local') . "<br>";
 echo "DB_HOST: " . DB_HOST . "<br>";
 echo "DB_NAME: " . DB_NAME . "<br>";
-echo "DB_USER: " . DB_USER . "<br>";
+echo "DB_USER: " . DB_USER . "<br><br>";
 
 try {
     $pdo = db();
     echo "✅ Connected successfully!<br><br>";
     
-    // Show tables using PDO::FETCH_NUM
-    $stmt = $pdo->query("SHOW TABLES");
-    echo "<h3>Tables:</h3>";
-    echo "<ul>";
+    // Show all databases
+    echo "<h3>All Databases:</h3>";
+    $stmt = $pdo->query("SHOW DATABASES");
     while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
-        echo "<li>📄 " . $row[0] . "</li>";
+        echo "📁 " . $row[0] . "<br>";
     }
-    echo "</ul>";
+    echo "<br>";
     
-    // Check users table
-    echo "<h3>Users:</h3>";
-    $stmt = $pdo->query("SELECT id, full_name, email, role FROM users");
-    echo "<table border='1' cellpadding='5'>";
-    echo "<tr><th>ID</th><th>Full Name</th><th>Email</th><th>Role</th></tr>";
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        echo "<tr>";
-        echo "<td>" . $row['id'] . "</td>";
-        echo "<td>" . $row['full_name'] . "</td>";
-        echo "<td>" . $row['email'] . "</td>";
-        echo "<td>" . $row['role'] . "</td>";
-        echo "</tr>";
+    // Check if users table exists in klps
+    $stmt = $pdo->query("SELECT DATABASE() as current_db");
+    $row = $stmt->fetch();
+    echo "Current database: " . $row['current_db'] . "<br><br>";
+    
+    // Try to use the database
+    $pdo->exec("USE klps");
+    echo "✅ Switched to klps database<br>";
+    
+    // Show tables in klps
+    echo "<h3>Tables in klps:</h3>";
+    $stmt = $pdo->query("SHOW TABLES");
+    while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+        echo "📄 " . $row[0] . "<br>";
     }
-    echo "</table>";
     
 } catch (PDOException $e) {
-    echo "❌ Error: " . $e->getMessage();
+    echo "❌ Error: " . $e->getMessage() . "<br>";
+    echo "Error Code: " . $e->getCode() . "<br>";
 }
 ?>
