@@ -1,38 +1,31 @@
 <?php
 declare(strict_types=1);
 
-// Start output buffering to prevent header errors
+// Start output buffering
 ob_start();
 
 session_start();
 
-// ===== SMART DETECTION - WORKS FOR BOTH LOCAL AND RAILWAY =====
+// ===== DETECT ENVIRONMENT =====
 $isRailway = getenv('RAILWAY_ENVIRONMENT') !== false || getenv('RAILWAY_SERVICE_ID') !== false;
 
 if ($isRailway) {
     // ===== RAILWAY PRODUCTION SETTINGS =====
-    define('DB_HOST', 'mysql.railway.internal');
-    define('DB_NAME', 'klps');
-    define('DB_USER', 'root');
-    define('DB_PASS', 'EZzgkiwDylPxoiYXQWwzHjerpkRznJBO');
-    define('ENVIRONMENT', 'production');
+    $db_host = 'mysql.railway.internal';
+    $db_name = 'klps';
+    $db_user = 'root';
+    $db_pass = 'mkfIbwuAUJwczcQSCDOpFOiunbRzGmDx';
 } else {
     // ===== LOCAL XAMPP SETTINGS =====
-    define('DB_HOST', '127.0.0.1');
-    define('DB_NAME', 'klps');
-    define('DB_USER', 'root');
-    define('DB_PASS', 'LanceAdrian1221'); // Your XAMPP MySQL password
-    define('ENVIRONMENT', 'development');
+    $db_host = '127.0.0.1';
+    $db_name = 'klps';
+    $db_user = 'root';
+    $db_pass = 'LanceAdrian1221';
 }
 
-// For debugging - shows environment
-if (ENVIRONMENT === 'development') {
-    error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-} else {
-    error_reporting(0);
-    ini_set('display_errors', 0);
-}
+// For debugging - shows errors
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // AI API settings
 const AI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
@@ -42,17 +35,30 @@ const AI_MODEL = 'gemini-3.6-flash';
 function db(): PDO {
     static $pdo = null;
     if ($pdo === null) {
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+        $isRailway = getenv('RAILWAY_ENVIRONMENT') !== false || getenv('RAILWAY_SERVICE_ID') !== false;
+        
+        if ($isRailway) {
+            $host = 'mysql.railway.internal';
+            $name = 'klps';
+            $user = 'root';
+            $pass = 'mkfIbwuAUJwczcQSCDOpFOiunbRzGmDx';
+        } else {
+            $host = '127.0.0.1';
+            $name = 'klps';
+            $user = 'root';
+            $pass = 'LanceAdrian1221';
+        }
+        
+        $dsn = 'mysql:host=' . $host . ';dbname=' . $name . ';charset=utf8mb4';
         try {
-            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            $pdo = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
             ]);
         } catch (PDOException $e) {
-            error_log("Database connection failed: " . $e->getMessage());
-            die("<h1>Database Connection Error</h1><p>" . $e->getMessage() . "</p>");
+            die("Database Error: " . $e->getMessage());
         }
     }
     return $pdo;
